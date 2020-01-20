@@ -4,7 +4,6 @@ import inspect
 def orm(cursor, dto_type):
     # the following line retrieve the argument names of the constructor
     args = inspect.getargspec(dto_type.__init__).args
-
     # the first argument of the constructor will be 'self', it does not correspond
     # to any database field, so we can ignore it.
     args = args[1:]
@@ -30,19 +29,18 @@ class Dao(object):
         self._dto_type = dto_type
 
         # dto_type is a class, its __name__ field contains a string representing the name of the class.
-        self._table_name = dto_type.__name__.lower() + 's'
+        self._table_name = dto_type.__name__[0]+ dto_type.__name__[1:].lower()+'s'
 
     def insert(self, dto_instance):
         ins_dict = vars(dto_instance)
-
         column_names = ','.join(ins_dict.keys())
         params = ins_dict.values()
+
         qmarks = ','.join(['?'] * len(ins_dict))
 
         stmt = 'INSERT INTO {} ({}) VALUES ({})' \
             .format(self._table_name, column_names, qmarks)
-
-        self._conn.execute(stmt, params)
+        self._conn.execute(stmt, [x for x in params])
 
     def find_all(self):
         c = self._conn.cursor()

@@ -1,11 +1,21 @@
 import sqlite3
 import os
-import persistence
+import dbtools
+from persistence import *
 def main():
-    open("config.txt", "r")
-#    if os.path.isfile('/home/joni/PycharmProjects/SPLCAFE/venv/include/moncafe.db'):
- #       os.remove('/home/joni/PycharmProjects/SPLCAFE/venv/include/moncafe.db')
-    persistence.repo.create_tables()
+   r = repo.create_tables()
+   configfile = open("config.txt", "r")
+   for x in configfile:
+       line = x.split(", ")
+       firstLetter = x.split(", ")[0]
+       if firstLetter == 'P':
+           repo.Products.insert(Product(line[1],line[2],line[3], 0))
+       elif firstLetter == 'S':
+           repo.Suppliers.insert(Supplier(line[1],line[2],line[3]))
+       elif firstLetter == 'E':
+           repo.Employees.insert(Employee(line[1],line[2],line[3],line[4]))
+       elif firstLetter == 'C':
+           repo.Coffee_stands.insert(Coffee_stand(line[1],line[2],line[3]))
 
 if __name__ == "__main__":
     main()
