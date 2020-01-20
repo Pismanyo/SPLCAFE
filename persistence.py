@@ -3,6 +3,25 @@ import atexit
 from dbtools import Dao
 
 # Data Transfer Objects:
+
+class EmployeesReport:
+    def __init__(self, conn):
+        self._conn = conn
+
+    def __str__(self):
+        c = self._conn.cursor()
+        all = c.execute("""
+        SELECT Employees.name,Employees.salary,Employees.coffee_stand, Total_Sales_Income
+        FROM(Employees INNER JOIN 
+        (SELECT Activities.activator_id, Products.price*Activities.quantity AS Total_Sales_Income FROM
+        Activities INNER JOIN Products ON Activities.product_id = Products.id) ON Employees.id=activator_id) 
+        ORDER BY Employees.name ASC;            
+        """).fetchall()
+        for item in all:
+            s = +"%s %d %s %g\n" % (item[0], item[1], item[2], item[3])
+
+        return s
+
 class Employee(object):
     def __init__(self, id, name, salary, coffee_stand):
         self.id = id
@@ -29,7 +48,7 @@ class Coffee_stand(object):
         self.location = location
         self.number_of_employees = number_of_employees
 
-class Activity(object):
+class Activitie(object):
     def __init__(self, product_id, quantity, activator_id, date):
         self.product_id = product_id
         self.quantity = quantity
@@ -54,6 +73,20 @@ class _Employees:
         """, [employee_id])
 
         return Employee(*c.fetchone())
+
+    def __str__(self):
+        c = self._conn.cursor()
+        all = c.execute("""
+                    SELECT Employees.name,Employees.salary,Employees.coffee_stand, Total_Sales_Income
+                    FROM(Employees INNER JOIN 
+                    (SELECT Activities.activator_id, Products.price*Activities.quantity AS Total_Sales_Income FROM
+                    Activities INNER JOIN Products ON Activities.product_id = Products.id) ON Employees.id=activator_id) 
+                    ORDER BY Employees.name ASC;            
+                """).fetchall()
+        for item in all:
+            s = +"%s %d %s %g\n" % (item[0], item[1], item[2], item[3])
+
+        return s
 
 
 class _Suppliers:
@@ -83,6 +116,14 @@ class _Products:
             INSERT INTO Products (id, description, price, quantity) VALUES (?, ?, ?, ?)
         """, [product.id, product.description, product.price, product.quantity])
 
+    def find(self, product_id):
+        c = self._conn.cursor()
+        c.execute("""
+            SELECT id , location, number_of_employees FROM Coffee_stands WHERE id = ?
+        """, [product_id])
+
+        return Product(*c.fetchone())
+
     def find_all(self):
         c = self._conn.cursor()
         all = c.execute("""
@@ -108,14 +149,16 @@ class _Coffee_stands:
 
         return Coffee_stand(*c.fetchone())
 
+
+
 class _Activities:
     def __init__(self, conn):
         self._conn = conn
 
-    def insert(self, activity):
+    def insert(self, Activitie):
         self._conn.execute("""
                INSERT INTO Activities (product_id, quantity, activator_id, date) VALUES (?, ?, ?, ?)
-           """, [activity.product_id, activity.quantity, activity.activator_id, activity.date])
+           """, [Activitie.product_id, Activitie.quantity, Activitie.activator_id, Activitie.date])
 
     def find_all(self):
         c = self._conn.cursor()
@@ -123,7 +166,8 @@ class _Activities:
             SELECT product_id, quantity, activator_id, date FROM Activities
         """).fetchall()
 
-        return [Activity(*row) for row in all]
+        return [Activitie(*row) for row in all]
+
 # The Repository
 class _Repository:
     def __init__(self):
@@ -132,7 +176,7 @@ class _Repository:
         self.Suppliers = Dao(Supplier, self._conn)
         self.Products = Dao(Product, self._conn)
         self.Coffee_stands = Dao(Coffee_stand, self._conn)
-        self.Activities = Dao(Activity, self._conn)
+        self.Activities = Dao(Activitie, self._conn)
 
     def _close(self):
         self._conn.commit()
